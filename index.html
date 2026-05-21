@@ -283,6 +283,54 @@
   .calc-breakdown .bar-container .bar-fill.neg { background: var(--bull); }
   .calc-breakdown .value { font-family: "SF Mono", Consolas, monospace; }
 
+  /* Weighted Calculator */
+  .weighted-grid {
+    display: grid;
+    gap: 8px;
+    margin: 8px 0;
+  }
+  .weighted-prob-row {
+    display: grid;
+    grid-template-columns: 100px 1fr 60px;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+  .weighted-prob-row input[type="range"] { width: 100%; }
+  .weighted-prob-row .prob-value {
+    font-family: "SF Mono", Consolas, monospace;
+    font-size: 14px; font-weight: 600;
+    text-align: right;
+    color: var(--accent);
+  }
+  .weighted-prob-row .scenario-pill { text-align: center; }
+  .weighted-q-btn { transition: all 0.15s; }
+  .weighted-q-btn.active {
+    background: var(--accent) !important;
+    color: white !important;
+    border-color: var(--accent) !important;
+  }
+  .weighted-output table { width: 100%; border-collapse: collapse; }
+  .weighted-output th, .weighted-output td {
+    padding: 8px 10px; text-align: right;
+    border-bottom: 1px solid var(--border);
+    font-variant-numeric: tabular-nums;
+  }
+  .weighted-output th { background: var(--accent-soft); font-size: 12px; }
+  .weighted-output td:first-child, .weighted-output th:first-child { text-align: left; }
+  .weighted-output .ev-row {
+    font-size: 16px; font-weight: 700;
+    background: var(--accent-soft);
+  }
+  .weighted-output .ev-row td { padding: 10px; }
+  .normalize-warning {
+    color: var(--warning); font-size: 11px;
+    margin-top: 6px; font-style: italic;
+  }
+
   /* Print */
   @media print {
     nav.sidebar { display: none; }
@@ -402,6 +450,18 @@
       gap: 12px !important;
     }
 
+    /* 모바일 weighted Calculator */
+    .weighted-prob-row {
+      grid-template-columns: 90px 1fr 50px;
+      gap: 8px;
+      padding: 5px 8px;
+    }
+    .weighted-prob-row .prob-value { font-size: 13px; }
+    .weighted-prob-row input[type="range"] { height: 24px; }
+    .weighted-output table { font-size: 11.5px; }
+    .weighted-output th, .weighted-output td { padding: 5px 6px; }
+    .weighted-output .ev-row { font-size: 13px; }
+
     /* Discussion turns */
     .discussion-turn { padding: 10px 12px; font-size: 13px; }
   }
@@ -428,11 +488,23 @@
     <li><a href="#summary" class="section-head">최종 요약</a></li>
 
     <li><a href="#calculator" class="section-head new">Transmission Calculator</a></li>
+    <li><a href="#calc-single" class="sub new">단일 시나리오 입력</a></li>
+    <li><a href="#calc-triggers" class="sub new">시나리오 Trigger Event</a></li>
+    <li><a href="#calc-weighted" class="sub new">확률 가중 평균</a></li>
 
     <li><a href="#stage6" class="section-head new">Stage 6 — 개선 적용</a></li>
     <li><a href="#s6-sample" class="sub new">표본 확장 효과</a></li>
     <li><a href="#s6-tail" class="sub new">Tail / Decoupling</a></li>
     <li><a href="#s6-results" class="sub new">5 시나리오 결과</a></li>
+
+    <li><a href="#stage7" class="section-head new">Stage 7 — 통계 진단</a></li>
+    <li><a href="#s7-rolling" class="sub new">Rolling Beta</a></li>
+    <li><a href="#s7-chow" class="sub new">Chow Break Test</a></li>
+    <li><a href="#s7-separation" class="sub new">Track A·B 분리</a></li>
+
+    <li><a href="#stage8" class="section-head new">Stage 8 — 정교화</a></li>
+    <li><a href="#s8-path-unc" class="sub new">시나리오 path 불확실성</a></li>
+    <li><a href="#s8-stress" class="sub new">비선형 Transmission</a></li>
 
     <li><a href="#discussion" class="section-head new">패널 토론</a></li>
 
@@ -449,6 +521,8 @@
     <strong>Anchor</strong>: 2026-05-06<br>
     <strong>Forecast</strong>: Q2/Q3/Q4말 2026<br>
     <strong>★ Stage 6 변경</strong>: 표본 2022.1~ (이전: 2024.1~)<br>
+    <strong>★ Stage 7 추가</strong>: Rolling beta + Chow test + Track A·B 분리<br>
+    <strong>★ Stage 8 추가</strong>: Path 불확실성 + Stress regime β<br>
     <strong>시나리오</strong>: 5종 (Bull / Base / Bear / Decoupling / Tail)<br>
     <strong>모델</strong>: Track A + B 50:50 앙상블<br>
     <strong>CI</strong>: Block bootstrap (5,000, block=5)<br>
@@ -543,10 +617,11 @@
 <section id="calculator">
   <h2>Transmission Calculator <span class="sub">사용자 입력 → 즉시 결과</span></h2>
   <p class="section-intro">
-    Stage 6 Track A 베타를 embed한 인터랙티브 계산기.
-    매크로 변수를 입력하면 KP 국책·민간 점추정이 실시간 계산됩니다.
-    프리셋 버튼으로 시나리오 분기말 path 자동 입력 가능.
+    Stage 6 Track A 베타를 embed한 인터랙티브 계산기. 세 가지 도구:
+    (1) 단일 시나리오 직접 입력, (2) 시나리오별 trigger event 참조, (3) 5 시나리오 확률 가중 평균.
   </p>
+
+  <h3 id="calc-single">단일 시나리오 입력 — 즉시 KP 점추정</h3>
 
   <div class="callout">
     <div class="title">사용법</div>
@@ -602,6 +677,136 @@
     </p>
 
     <div class="calc-output" id="calc-result">
+      <!-- JS가 채움 -->
+    </div>
+  </div>
+
+  <h3 id="calc-triggers">시나리오 Trigger Event — 언제 어떤 시나리오?</h3>
+
+  <p>
+    각 시나리오의 발생 조건과 모델 재추정 필요 조건을 명시.
+    Issuer Treasury 제안: <em>"의사결정자가 언제 본 자료를 신뢰할 수 없는지 명확히"</em>.
+    모니터링 항목이 trigger를 칠 경우 시나리오 가정·확률·베타를 재검토.
+  </p>
+
+  <div class="table-wrapper">
+    <div class="table-header">
+      <span class="table-title">시나리오별 발생 조건 + 재추정 트리거</span>
+      <button class="copy-btn" data-copy-target="tbl-triggers">Copy</button>
+    </div>
+    <table class="data" id="tbl-triggers">
+      <thead>
+        <tr><th style="min-width: 90px;">시나리오</th><th>발생 조건 (Trigger Events)</th><th>모니터링 항목</th><th>재추정 시점</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="bull strong">Bull</td>
+          <td>인플레 압력 완화 (CPI YoY &lt;2.5%). Fed 인하 시그널 강화. AI·기술 cycle 강세 지속. 한국 수출 호조 (반도체·자동차).</td>
+          <td>미국 CPI, Fed 점도표, KOSPI 8,000+ 안착 여부, 외평채 5bp 이하 유지</td>
+          <td>미국 IG 70bp 이하 진입 시 — Bull 시나리오의 ceiling이 더 낮을 가능성</td>
+        </tr>
+        <tr>
+          <td class="base strong">Base</td>
+          <td>현재 추세 지속. Fed 10월 25bp 인하. 인플레 2.5-3.0% 박스권. KOSPI 8,000 중반 유지 후 4Q 조정.</td>
+          <td>FOMC, FOMC 점도표, CPI/PCE, KOSPI 분기말 mark</td>
+          <td>Fed 점도표가 6월 또는 9월 FOMC에서 큰 폭 변경 시</td>
+        </tr>
+        <tr>
+          <td class="bear strong">Bear</td>
+          <td>인플레 재가속 (CPI YoY &gt;3.5%). Fed 매파 발언 강화 또는 4Q 인상. 미국 IG 100bp 이상.</td>
+          <td>미국 CPI 헤드라인, Fed 발언, 미국 IG 95bp 돌파 여부, KOSPI 7,000 이탈</td>
+          <td>미국 IG 100bp 돌파 + KOSPI 7,000 이탈 동시 발생 시 — Bear 시나리오 본격 진입 판단</td>
+        </tr>
+        <tr>
+          <td class="decoup strong">Decoupling</td>
+          <td>2018Q4-type 패턴. 성장 둔화 우려로 UST는 rally(하락) but credit·equity는 widen·약세. 실적 부진·신용 event.</td>
+          <td>UST 10Y와 미국 IG 동시 추적. UST &lt;4.0% + 미국 IG &gt;95bp 동시 발생 여부</td>
+          <td>UST 4.0% 이하 진입 시 — 본 모델의 동조 가정과 어긋남, decoupling 본격 진입</td>
+        </tr>
+        <tr>
+          <td class="tail strong">Tail ★</td>
+          <td>2018Q4 글로벌 매도 / 2020 COVID / 2022 레고랜드급 시스템 충격. 지정학 위기 (대만·이란), 신용 경색, Fed 50bp 인상.</td>
+          <td>VIX &gt;30 지속, MOVE &gt;120, 미국 IG &gt;130bp, KOSPI -15% 이상 급락</td>
+          <td><strong>Tail 시점이라 판단되면 본 모델 일시 정지 권장</strong> — 베타가 stress regime에서 크게 변할 가능성, 워크북 episode 분석으로 보완</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warning">
+    <div class="title">모델 재추정 글로벌 트리거</div>
+    아래 중 하나라도 발생 시 본 모델의 베타·시나리오 전체를 <strong>재추정·재검토</strong> 권장:
+    <ul style="margin: 4px 0;">
+      <li>Rolling beta가 ±2σ band를 3개월 이상 벗어남 (§Stage 7 시각화 참고)</li>
+      <li>새 Chow break test가 가장 최근 시점에서 F&gt;3 (p&lt;0.01) 출현</li>
+      <li>KP 실제값이 본 모델의 Bear P95를 1주 이상 초과 (Bear 시나리오 자체 부적합)</li>
+      <li>한국 신용 등급 변동 (S&amp;P/Moody's/Fitch 어느 하나라도 outlook 변경)</li>
+      <li>분기 종료 후 새 anchor + 다음 분기 시나리오 갱신 (정기 update)</li>
+    </ul>
+  </div>
+
+  <h3 id="calc-weighted">확률 가중 Expected Value 계산기</h3>
+
+  <p>
+    각 시나리오에 본인 view의 확률을 입력하면 <em>가중 평균 KP 점추정</em>이 자동 계산.
+    단일 숫자가 필요한 의사결정 (발행 가이드·budget 자료)에 활용.
+    Asia DCM Director·EM Credit PM 제안.
+  </p>
+
+  <div class="callout">
+    <div class="title">디폴트 확률 + 직접 조정</div>
+    초기 디폴트는 *중도적 균형 view* (Bull 20% / Base 50% / Bear 20% / Decoupling 5% / Tail 5%).
+    슬라이더로 본인 view 조정 가능. 합계가 100%가 되도록 자동 정규화됩니다.
+    Credit Strategist의 우려 (디폴트 가중치 = 또 다른 black box) 해소를 위해
+    <strong>디폴트는 강한 의견이 아님을 명시</strong> — 본인 view를 반드시 입력해서 사용 권장.
+  </div>
+
+  <div class="calculator">
+    <h4 style="margin: 0 0 12px 0; font-size: 14px;">분기 선택</h4>
+    <div class="calc-presets" id="weighted-quarter-buttons">
+      <button onclick="setWeightedQuarter('Q2_2026')" class="weighted-q-btn">Q2말</button>
+      <button onclick="setWeightedQuarter('Q3_2026')" class="weighted-q-btn active">Q3말</button>
+      <button onclick="setWeightedQuarter('Q4_2026')" class="weighted-q-btn">Q4말</button>
+    </div>
+
+    <h4 style="margin: 16px 0 8px 0; font-size: 14px;">시나리오 확률 (합계 자동 정규화)</h4>
+
+    <div class="weighted-grid" id="weighted-probs">
+      <div class="weighted-prob-row">
+        <span class="scenario-pill bull">Bull</span>
+        <input type="range" id="prob-Bull" min="0" max="100" step="1" value="20" oninput="updateWeighted()">
+        <span class="prob-value" id="prob-Bull-val">20%</span>
+      </div>
+      <div class="weighted-prob-row">
+        <span class="scenario-pill base">Base</span>
+        <input type="range" id="prob-Base" min="0" max="100" step="1" value="50" oninput="updateWeighted()">
+        <span class="prob-value" id="prob-Base-val">50%</span>
+      </div>
+      <div class="weighted-prob-row">
+        <span class="scenario-pill bear">Bear</span>
+        <input type="range" id="prob-Bear" min="0" max="100" step="1" value="20" oninput="updateWeighted()">
+        <span class="prob-value" id="prob-Bear-val">20%</span>
+      </div>
+      <div class="weighted-prob-row">
+        <span class="scenario-pill decoup">Decoupling</span>
+        <input type="range" id="prob-Decoupling" min="0" max="100" step="1" value="5" oninput="updateWeighted()">
+        <span class="prob-value" id="prob-Decoupling-val">5%</span>
+      </div>
+      <div class="weighted-prob-row">
+        <span class="scenario-pill tail">Tail</span>
+        <input type="range" id="prob-Tail" min="0" max="100" step="1" value="5" oninput="updateWeighted()">
+        <span class="prob-value" id="prob-Tail-val">5%</span>
+      </div>
+    </div>
+
+    <div class="calc-presets" style="margin-top: 12px;">
+      <button onclick="loadProbPreset('default')">디폴트 (균형)</button>
+      <button onclick="loadProbPreset('optimistic')">낙관 (Bull 우세)</button>
+      <button onclick="loadProbPreset('cautious')">보수 (Bear 강조)</button>
+      <button onclick="loadProbPreset('stress')">Stress-aware (Tail/Decoupling 증가)</button>
+    </div>
+
+    <div class="calc-output" id="weighted-result" style="margin-top: 16px;">
       <!-- JS가 채움 -->
     </div>
   </div>
@@ -708,6 +913,275 @@
       <li><strong>Tail 신설로 워크북 stress 영역 cover</strong> — Issuer Treasury 우려 해소.</li>
       <li><strong>Decoupling ≈ Bear</strong>: UST 하락이 KP에 무력함 확인 — KP transmission이 rates보다 credit·equity 중심.</li>
       <li><strong>본 워크북이 H2 2026 전망의 최종 결론</strong>: Bull-Tail fan width = KP 국책 ~20bp / KP 민간 ~50bp (Q3말 기준).</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- Stage 7 — 통계 진단 (묶음 1) -->
+<!-- ============================================================ -->
+<section id="stage7">
+  <h2>Stage 7 — 통계 진단 + 보고서 구조 개편 <span class="sub">★ 최신 (묶음 1)</span></h2>
+  <p class="section-intro">
+    토론에서 Credit Strategist가 강조한 <em>통계적 엄밀성·정직성</em> 진단 도구 추가.
+    Rolling beta·Chow break test로 regime 안정성을 정량 검증, Track A·B를 명시적으로 분리 보고.
+  </p>
+
+  <h3 id="s7-rolling">Rolling Beta — 시간 가변 베타</h3>
+
+  <p>
+    60일·120일 rolling window로 Track A 베타의 시계열 변화를 추적.
+    Stage 5 baseline(빨간 점선, 2024~)과 Stage 6 default(녹색 점선, 2022~)도 함께 표시 — 
+    현재 베타가 어느 baseline에 더 가까운지 시각적 확인.
+  </p>
+
+  <figure>
+    <img src="assets/stage7_rolling_beta.png" alt="Rolling beta">
+    <figcaption>
+      Rolling beta — KP 국책·민간 × (US IG / KOSPI). 회색=60일, 청색=120일, 청색 음영=±2σ HAC SE.
+      베타가 *대단히 시간 가변적*이라는 점이 시각적으로 명확.
+    </figcaption>
+  </figure>
+
+  <div class="callout">
+    <div class="title">Rolling beta 핵심 발견</div>
+    <ul style="margin: 4px 0;">
+      <li><strong>베타가 0.0 ~ 0.5 범위로 자주 변동</strong> — 모델이 "현재 베타"를 잘 잡지만 *과거 stress 시 베타*는 다를 수 있음을 정직하게 노출.</li>
+      <li><strong>KP 국책 US IG β</strong>: 2020년 ~0 → 2024년 정점 0.4+ → 2026년 0.15. 한국 신용 risk가 점차 글로벌과 다시 동조 해소 중.</li>
+      <li><strong>KP 민간 US IG β</strong>: 2024년 0.4+ 정점 → 2026년 0.2 근처. 본 Stage 6 default(0.225)에 수렴.</li>
+      <li><strong>Stage 6 baseline이 *현재* 베타에 더 가까움</strong> — 표본 확장 결정의 정당성 시각 확인.</li>
+    </ul>
+  </div>
+
+  <h3 id="s7-chow">Chow Break Test — 베타 구조 변화 검정</h3>
+
+  <p>
+    14개 후보 breakpoint에서 H0("베타 변화 없음")를 F-test로 검정.
+    Track A 회귀를 (1) pooled 표본, (2) pre-break 표본, (3) post-break 표본 각각 추정 후
+    잔차 제곱합(RSS) 변화로 통계 산출.
+  </p>
+
+  <figure>
+    <img src="assets/stage7_chow_test.png" alt="Chow break test">
+    <figcaption>
+      Chow F-stat. 빨간 막대 = REJECT H0 (p<0.05, break 통계적 유의).
+      검정색 점선 = 5% 유의수준 임계값 (F≈2.21). 별표 = 유의도 (***p<0.01, **p<0.05, *p<0.10).
+    </figcaption>
+  </figure>
+
+  <div class="table-wrapper">
+    <div class="table-header">
+      <span class="table-title">Chow test 핵심 결과 — p<0.05 유의한 break</span>
+      <button class="copy-btn" data-copy-target="tbl-chow">Copy</button>
+    </div>
+    <table class="data" id="tbl-chow">
+      <thead>
+        <tr><th>Breakpoint</th><th>KP 국책 F</th><th>KP 국책 p</th><th>KP 민간 F</th><th>KP 민간 p</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>2021-01-01</td><td>2.04</td><td>0.070</td><td><strong>3.60</strong></td><td><strong>0.003 ★</strong></td></tr>
+        <tr><td>2022-01-01</td><td><strong>2.49</strong></td><td><strong>0.030 ★</strong></td><td><strong>2.65</strong></td><td><strong>0.021 ★</strong></td></tr>
+        <tr><td>2023-01-01</td><td><strong>2.60</strong></td><td><strong>0.024 ★</strong></td><td><strong>3.06</strong></td><td><strong>0.009 ★</strong></td></tr>
+        <tr><td>2023-06-01</td><td><strong>4.68</strong></td><td><strong>0.000 ★★★</strong></td><td><strong>2.81</strong></td><td><strong>0.016 ★</strong></td></tr>
+        <tr><td>2024-01-01</td><td><strong>3.88</strong></td><td><strong>0.002 ★★</strong></td><td><strong>2.67</strong></td><td><strong>0.021 ★</strong></td></tr>
+        <tr><td>2024-12-01</td><td><strong>3.56</strong></td><td><strong>0.003 ★★</strong></td><td>1.26</td><td>0.281</td></tr>
+        <tr><td>2025-06-01</td><td><strong>4.47</strong></td><td><strong>0.000 ★★★</strong></td><td>0.40</td><td>0.847</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warning">
+    <div class="title">Chow test 핵심 발견 — 토론의 통계적 증명</div>
+    <ul style="margin: 4px 0;">
+      <li><strong>거의 모든 시점에서 break 통계적 유의 (KP 민간)</strong> — 베타가 자주 변함을 정량 확인.</li>
+      <li><strong>2023.6 이후 KP 국책 break 강도 최대 (F=4.7)</strong> — 한국 정치·신용 측면 변화. 워크북 episode와 정합.</li>
+      <li><strong>2024.12 비상계엄 이후</strong>: 국책 break 강화, 민간 break 약화 — 두 카테고리의 *다른 transmission 특성* 시각화.</li>
+      <li><strong>본 모델은 "현재 베타 기준"임이 자명</strong> — 모델 사용 시 regime 변화 발생 시 *반드시 재추정* 필요.</li>
+    </ul>
+  </div>
+
+  <h3 id="s7-separation">Track A·B 명시적 분리 보고</h3>
+
+  <p>
+    토론에서 Credit Strategist가 제안한 보고서 구조 개편을 부분 반영 — 두 모델이 <em>다른 질문에 답한다</em>는 점을 명시적으로 시각화.
+  </p>
+
+  <h4>Track A 단독 — 외생변수 시나리오 → KP 점추정 (Beta-Scenario)</h4>
+
+  <figure>
+    <img src="assets/stage7_track_a_separate.png" alt="Track A 단독">
+    <figcaption>
+      Track A 단독 forecast (Bootstrap CI 포함). 외생변수 시나리오 path × 학습된 베타 = KP 점추정.
+      앙상블·평균 없는 원본 결과.
+    </figcaption>
+  </figure>
+
+  <h4>Track B — Misalignment 정성 진단 (점추정 forecast 아님)</h4>
+
+  <figure>
+    <img src="assets/stage7_track_b_misalignment.png" alt="Track B misalignment">
+    <figcaption>
+      Track B의 *fair value vs 실제* 시계열. 분홍 음영 = 실제 > fair (채권 cheap),
+      녹색 음영 = 실제 < fair (채권 rich). 진단 보조 도구, 점추정 미사용.
+    </figcaption>
+  </figure>
+
+  <div class="callout">
+    <div class="title">두 모델의 역할 분리 — 명확한 가이드라인</div>
+    <table class="data" style="margin-top: 8px;">
+      <thead>
+        <tr><th>측면</th><th>Track A (Beta-Scenario)</th><th>Track B (ARDL-ECM)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>주된 질문</strong></td><td>"시나리오 X 발생 시 KP가 얼마가 될까?"</td><td>"현재 KP는 펀더멘털 대비 어느 수준?"</td></tr>
+        <tr><td><strong>출력</strong></td><td>점추정 + 신뢰구간</td><td>fair value, misalignment %</td></tr>
+        <tr><td><strong>활용</strong></td><td>의사결정 (투자·발행 timing)</td><td>현재 valuation 진단 (정성)</td></tr>
+        <tr><td><strong>한계</strong></td><td>현재 베타 가정. regime 변화 시 무효</td><td>Bounds test fail. 점추정 불가</td></tr>
+        <tr><td><strong>본 워크북 활용</strong></td><td>★ 메인 결과 (점추정·CI)</td><td>보조 진단 (현재 위치)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>현재 Misalignment 진단 결과 (2026-05-06 anchor)</h4>
+  <ul>
+    <li><strong>KP 국책</strong>: 실제 27.9 ≈ fair ~28bp. 정렬됨 (이전 Stage 5: +80% overpriced. 표본 확장으로 fair value 갱신).</li>
+    <li><strong>KP 민간</strong>: 실제 72.4 ≈ fair ~75bp. 정렬됨 (이전 Stage 5: -25% underpriced. 표본 확장으로 fair value 갱신).</li>
+    <li>두 카테고리 모두 <em>현재 fair value 근처</em>에 있어, 펀더멘털 측면에서 *대형 dislocation 없음*.</li>
+  </ul>
+
+  <div class="callout success">
+    <div class="title">Stage 7 (묶음 1) 통합 시사</div>
+    <ul style="margin: 4px 0;">
+      <li><strong>본 모델의 한계가 명시적으로 시각화됨</strong> — Rolling beta로 "베타가 변한다"를 직관적으로 보임.</li>
+      <li><strong>Chow test로 표본 확장 결정 정당화</strong> — 2024년 break가 p<0.01로 강하게 유의, Stage 6의 2022~ 표본이 더 robust.</li>
+      <li><strong>두 모델의 역할이 명확</strong> — Track A는 forecast 메인, Track B는 misalignment 진단 보조. 50:50 앙상블은 *Track A 점추정의 보수적 조정* 역할.</li>
+      <li><strong>차기 모니터링</strong>: rolling beta가 크게 흔들리거나 새 Chow break가 발견되면 → 시나리오 가정·베타 재추정 필요.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- Stage 8 — 정교화 (묶음 3) -->
+<!-- ============================================================ -->
+<section id="stage8">
+  <h2>Stage 8 — 정교화 <span class="sub">★ 최신 (묶음 3): Path 불확실성 + 비선형 transmission</span></h2>
+  <p class="section-intro">
+    토론에서 Asia DCM Director가 지적한 <em>"시나리오 가정 자체에 robustness check 없음"</em>과
+    Credit Strategist가 우려한 <em>stress regime에서 베타가 다를 가능성</em>을 정량 검증.
+    두 작업 모두 흥미로운 *예상과 다른 결과* 도출.
+  </p>
+
+  <h3 id="s8-path-unc">시나리오 path 불확실성 — Monte Carlo 확장 CI</h3>
+
+  <p>
+    시나리오 변수에 정규 noise를 부여하고 5,000회 Monte Carlo 시뮬레이션.
+    잔차 block bootstrap과 *결합*해 통합 CI 산출.
+  </p>
+
+  <div class="table-wrapper">
+    <div class="table-header">
+      <span class="table-title">시나리오 변수별 std 매트릭스</span>
+      <button class="copy-btn" data-copy-target="tbl-scenario-std">Copy</button>
+    </div>
+    <table class="data" id="tbl-scenario-std">
+      <thead>
+        <tr><th>변수</th><th>일반 시나리오 std<br>(Bull/Base/Bear/Decoupling)</th><th>Tail 시나리오 std<br>(2배 확대)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>미국 IG (bp)</td><td>±8</td><td>±20</td></tr>
+        <tr><td>UST 10Y (%)</td><td>±0.20</td><td>±0.40</td></tr>
+        <tr><td>MOVE</td><td>±10</td><td>±25</td></tr>
+        <tr><td>KOSPI (%)</td><td>±5.0</td><td>±15.0</td></tr>
+        <tr><td>아시아 IG (bp)</td><td>±7</td><td>±18</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <figure>
+    <img src="assets/stage8_unc_comparison.png" alt="시나리오 unc 효과">
+    <figcaption>Stage 4 (잔차만, 좁은 선) vs Stage 8 (잔차+시나리오, 굵은 선) CI 비교. 일반 시나리오는 거의 동일, Tail에서만 가시적 확장.</figcaption>
+  </figure>
+
+  <figure>
+    <img src="assets/stage8_variance_decomp.png" alt="분산 분해">
+    <figcaption>분산 분해 — 시나리오 path 불확실성(주황) vs 잔차(파랑) 비중. 일반 시나리오 2-9%, Tail 19-39%.</figcaption>
+  </figure>
+
+  <div class="callout warning">
+    <div class="title">예상치 못한 발견 1 — 잔차가 압도적</div>
+    <ul style="margin: 4px 0;">
+      <li><strong>일반 시나리오에서 시나리오 path 불확실성 비중 2-9%</strong> — 잔차 누적이 압도적. 시나리오 std를 더해도 CI가 거의 변하지 않음.</li>
+      <li><strong>Tail 시나리오 KP 국책 Q2말 39%</strong> — 단기 horizon + 큰 std 조합에서만 의미 있음.</li>
+      <li><strong>실용적 시사</strong>: Bull/Base/Bear는 *현재 점추정 + 잔차 CI*로 충분히 정직. Tail은 *시나리오 가정 자체*를 명시적으로 robust check (여러 path 시도) 권장.</li>
+    </ul>
+  </div>
+
+  <h3 id="s8-stress">비선형 Transmission — Stress regime 베타</h3>
+
+  <p>
+    가설: <em>"Stress regime에서는 베타가 더 크다"</em>.
+    검증 방법: 미국 IG OAS 상위 20%ile 기간(미국 IG ≥ 136bp)을 stress regime으로 정의하고
+    그 표본만 사용해 별도 OLS 회귀. 644 영업일 (2020 COVID, 2022 레고랜드 등 episode 다수 포함).
+  </p>
+
+  <figure>
+    <img src="assets/stage8_stress_betas.png" alt="Stress betas">
+    <figcaption>Normal regime(회색) vs Stress regime(빨강) 베타. Newey-West HAC SE.</figcaption>
+  </figure>
+
+  <div class="table-wrapper">
+    <div class="table-header">
+      <span class="table-title">Normal vs Stress regime 베타 비교</span>
+      <button class="copy-btn" data-copy-target="tbl-stress-beta">Copy</button>
+    </div>
+    <table class="data" id="tbl-stress-beta">
+      <thead>
+        <tr><th>카테고리</th><th>변수</th><th>Normal β</th><th>Stress β</th><th>Ratio</th><th>변화 방향</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>국책</td><td>US IG</td><td>+0.152</td><td>+0.064</td><td>0.42×</td><td><span class="bull">감소 (예상과 반대)</span></td></tr>
+        <tr><td>국책</td><td><strong>외평채 (FX)</strong></td><td><strong>+0.279</strong></td><td><strong>+0.381</strong></td><td><strong>1.36×</strong></td><td><span class="bear strong">증가 ★</span></td></tr>
+        <tr><td>국책</td><td>MOVE</td><td>-0.014</td><td>-0.006</td><td>0.39×</td><td>약화</td></tr>
+        <tr><td>국책</td><td>KOSPI</td><td>-0.059</td><td>+0.032</td><td>-0.54×</td><td><span class="muted">부호 반전 (잡음 가능)</span></td></tr>
+        <tr><td>민간</td><td>US IG</td><td>+0.338</td><td>+0.254</td><td>0.75×</td><td><span class="bull">감소</span></td></tr>
+        <tr><td>민간</td><td>외평채 (FX)</td><td>+0.223</td><td>+0.216</td><td>0.97×</td><td>거의 동일</td></tr>
+        <tr><td>민간</td><td>MOVE</td><td>-0.015</td><td>-0.064</td><td>4.39×</td><td><span class="bear">강화 (변동성에 더 민감)</span></td></tr>
+        <tr><td>민간</td><td>KOSPI</td><td>-0.153</td><td>+0.092</td><td>-0.60×</td><td><span class="muted">부호 반전</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <figure>
+    <img src="assets/stage8_tail_comparison.png" alt="Tail comparison">
+    <figcaption>Tail 시나리오 점추정 비교 — Stage 6 전체 표본 β(빨강) vs Stage 8 stress β(주황). Stress β 적용 시 8-12bp 더 낮음.</figcaption>
+  </figure>
+
+  <div class="callout warning">
+    <div class="title">예상치 못한 발견 2 — Stress 시 미국 IG β *감소*, 외평채 β *증가*</div>
+    <ul style="margin: 4px 0;">
+      <li><strong>KP 국책 US IG β: 0.152 → 0.064 (-58%)</strong>. Stress 시 KP가 미국 IG에 *덜* 동조.</li>
+      <li><strong>KP 국책 외평채 β: 0.279 → 0.381 (+36%)</strong>. Stress 시 한국 sovereign risk premium이 *더* 결정적.</li>
+      <li><strong>해석</strong>: 글로벌 stress 시 KP는 *완전히 글로벌 동조*하기보다 *한국 특수 risk premium*이 더 중요해짐. 2020 COVID·2022 레고랜드에서 한국 KP가 글로벌 IG와 어긋난 움직임을 보인 사실과 정합.</li>
+      <li><strong>Tail 시나리오 점추정</strong>: Stress β 적용 시 KP 국책 Q3말 42→33bp (-9bp), KP 민간 117→85bp (-32bp). <strong>오히려 더 보수적</strong>.</li>
+    </ul>
+  </div>
+
+  <div class="callout">
+    <div class="title">실용적 가이드라인 — 어느 β를 쓸 것인가</div>
+    <ul style="margin: 4px 0;">
+      <li><strong>Bull/Base/Bear/Decoupling</strong>: <strong>전체 표본 β (Stage 6)</strong>. 시나리오 가정이 평이한 영역에 있어 평균 transmission이 적절.</li>
+      <li><strong>Tail (시스템 충격)</strong>: <strong>두 β 모두 보고 권장</strong>. Stress β는 한국 특수 risk가 우세할 때(예: 한국 정치 위기), 전체 표본 β는 글로벌 동조형 stress (Fed 인상·신용 경색)일 때 더 적합.</li>
+      <li><strong>한국 특수 risk가 핵심인 시나리오</strong>: 외평채 변동을 시나리오에 명시적으로 포함시켜 stress β가 잘 작동하도록 (현재 외평채는 derived).</li>
+    </ul>
+  </div>
+
+  <div class="callout success">
+    <div class="title">Stage 8 (묶음 3) 통합 시사</div>
+    <ul style="margin: 4px 0;">
+      <li><strong>본 모델의 결론 안정성 재확인</strong> — 시나리오 path noise를 더해도 일반 시나리오의 CI가 거의 안 변함 (잔차가 압도적). Stage 6 결론 robust.</li>
+      <li><strong>Tail 시나리오 unc는 의미 있게 확장</strong> — 시나리오 std가 6-23%의 분산 비중 차지. Tail forecast 사용 시 명시.</li>
+      <li><strong>Stress regime에서 한국 특수 risk가 우세</strong>는 valuable finding — Track B 외평채 β framework이 stress 시 더 중요해진다는 시사. 외평채 modeling 정교화가 차기 후보.</li>
+      <li><strong>본 작업의 한계</strong>: stress regime 정의(미국 IG 80%ile)가 *글로벌 stress* 위주. 한국 특수 episode(레고랜드·비상계엄)만 따로 분리하지 않음. 추후 *한국 특수 stress*와 *글로벌 stress*를 분리 정의 가능.</li>
     </ul>
   </div>
 </section>
@@ -1210,6 +1684,163 @@ function recalc() {
 
 // 초기 계산
 recalc();
+
+// ====================================================================
+// Weighted Calculator — 확률 가중 시나리오 expected value
+// ====================================================================
+
+// 시나리오별 분기말 KP 점추정 (Stage 6 Equal-weight ensemble 기준)
+const SCENARIO_FORECASTS = {
+  Bull:       { Q2_2026: { soe: 27.8, priv: 73.1 }, Q3_2026: { soe: 24.5, priv: 68.2 }, Q4_2026: { soe: 24.5, priv: 70.2 } },
+  Base:       { Q2_2026: { soe: 28.6, priv: 74.7 }, Q3_2026: { soe: 26.7, priv: 73.6 }, Q4_2026: { soe: 27.8, priv: 79.0 } },
+  Bear:       { Q2_2026: { soe: 31.4, priv: 80.4 }, Q3_2026: { soe: 33.8, priv: 91.1 }, Q4_2026: { soe: 32.6, priv: 90.6 } },
+  Decoupling: { Q2_2026: { soe: 30.5, priv: 79.6 }, Q3_2026: { soe: 33.7, priv: 91.7 }, Q4_2026: { soe: 31.5, priv: 88.9 } },
+  Tail:       { Q2_2026: { soe: 36.4, priv: 90.9 }, Q3_2026: { soe: 43.9, priv: 116.7 }, Q4_2026: { soe: 43.2, priv: 116.5 } },
+};
+
+const SCENARIO_ORDER = ['Bull', 'Base', 'Bear', 'Decoupling', 'Tail'];
+
+const PROB_PRESETS = {
+  default:    { Bull: 20, Base: 50, Bear: 20, Decoupling: 5,  Tail: 5  },
+  optimistic: { Bull: 40, Base: 40, Bear: 15, Decoupling: 3,  Tail: 2  },
+  cautious:   { Bull: 10, Base: 35, Bear: 35, Decoupling: 10, Tail: 10 },
+  stress:     { Bull: 10, Base: 30, Bear: 25, Decoupling: 15, Tail: 20 },
+};
+
+let currentWeightedQuarter = 'Q3_2026';
+
+function setWeightedQuarter(q) {
+  currentWeightedQuarter = q;
+  // 활성 버튼 표시
+  document.querySelectorAll('.weighted-q-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  document.querySelector(`button.weighted-q-btn[onclick*="${q}"]`).classList.add('active');
+  updateWeighted();
+}
+
+function loadProbPreset(name) {
+  const preset = PROB_PRESETS[name];
+  SCENARIO_ORDER.forEach(s => {
+    document.getElementById(`prob-${s}`).value = preset[s];
+  });
+  updateWeighted();
+}
+
+function updateWeighted() {
+  // 1. 현재 입력값 수집
+  const rawProbs = {};
+  SCENARIO_ORDER.forEach(s => {
+    rawProbs[s] = parseFloat(document.getElementById(`prob-${s}`).value) || 0;
+  });
+  const sumRaw = Object.values(rawProbs).reduce((a,b) => a+b, 0);
+
+  // 2. 정규화
+  const normProbs = {};
+  if (sumRaw > 0) {
+    SCENARIO_ORDER.forEach(s => {
+      normProbs[s] = rawProbs[s] / sumRaw;
+    });
+  } else {
+    SCENARIO_ORDER.forEach(s => { normProbs[s] = 0; });
+  }
+
+  // 3. 슬라이더 옆 % 표시 갱신 (raw → normalized 둘 다)
+  SCENARIO_ORDER.forEach(s => {
+    const norm = normProbs[s] * 100;
+    document.getElementById(`prob-${s}-val`).innerText = `${norm.toFixed(1)}%`;
+  });
+
+  // 4. Expected value 계산
+  const forecasts = SCENARIO_FORECASTS;
+  const q = currentWeightedQuarter;
+
+  let ev_soe = 0;
+  let ev_priv = 0;
+  const breakdown = [];
+  SCENARIO_ORDER.forEach(s => {
+    const p = normProbs[s];
+    const soe = forecasts[s][q].soe;
+    const priv = forecasts[s][q].priv;
+    ev_soe += p * soe;
+    ev_priv += p * priv;
+    breakdown.push({
+      scenario: s,
+      prob_raw: rawProbs[s],
+      prob_norm: p,
+      soe: soe,
+      priv: priv,
+      contrib_soe: p * soe,
+      contrib_priv: p * priv,
+    });
+  });
+
+  // Anchor 비교
+  const anchor_soe = 27.94;
+  const anchor_priv = 72.39;
+
+  // 5. 결과 HTML
+  const qLabel = q.replace('_2026', '말');
+  const normWarning = (Math.abs(sumRaw - 100) > 0.5 && sumRaw > 0)
+    ? `<div class="normalize-warning">⚠️ 입력 합계 ${sumRaw.toFixed(0)}% — 위 값은 100% 정규화 후 표시됨</div>`
+    : '';
+
+  const breakdownHTML = breakdown.map(b => {
+    const scenClass = b.scenario.toLowerCase().replace('decoupling', 'decoup');
+    return `
+      <tr>
+        <td><span class="scenario-pill ${scenClass}">${b.scenario}</span></td>
+        <td>${(b.prob_norm * 100).toFixed(1)}%</td>
+        <td>${b.soe.toFixed(1)}</td>
+        <td>${b.contrib_soe.toFixed(2)}</td>
+        <td>${b.priv.toFixed(1)}</td>
+        <td>${b.contrib_priv.toFixed(2)}</td>
+      </tr>
+    `;
+  }).join('');
+
+  const deltaSoe = ev_soe - anchor_soe;
+  const deltaPriv = ev_priv - anchor_priv;
+  const cls = (v) => v > 0 ? 'delta-pos' : (v < 0 ? 'delta-neg' : '');
+  const sgn = (v) => v > 0 ? '+' : '';
+
+  document.getElementById('weighted-result').innerHTML = `
+    <div class="weighted-output">
+      <p style="margin: 0 0 8px 0; font-size: 13px;"><strong>${qLabel}</strong> 확률 가중 Expected Value:</p>
+      <table>
+        <thead>
+          <tr>
+            <th>시나리오</th>
+            <th>정규화 확률</th>
+            <th>국책 (bp)</th>
+            <th>국책 기여</th>
+            <th>민간 (bp)</th>
+            <th>민간 기여</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${breakdownHTML}
+          <tr class="ev-row">
+            <td>EV (Expected Value)</td>
+            <td>100.0%</td>
+            <td colspan="2">${ev_soe.toFixed(2)} bp</td>
+            <td colspan="2">${ev_priv.toFixed(2)} bp</td>
+          </tr>
+        </tbody>
+      </table>
+      ${normWarning}
+      <p style="margin: 12px 0 0 0; font-size: 12px; color: var(--muted); line-height: 1.5;">
+        Anchor (5/6) 대비: KP 국책 <span class="${cls(deltaSoe)}">${sgn(deltaSoe)}${deltaSoe.toFixed(2)} bp</span>,
+        KP 민간 <span class="${cls(deltaPriv)}">${sgn(deltaPriv)}${deltaPriv.toFixed(2)} bp</span><br>
+        <em>주: 시나리오별 KP 점추정은 Stage 6 50:50 앙상블 결과. 본 EV는 사용자 확률을 적용한 단일 의사결정용 숫자.
+        Tail/Decoupling 시나리오의 확률을 0%로 두면 단순 Bull/Base/Bear 가중 평균이 됩니다.</em>
+      </p>
+    </div>
+  `;
+}
+
+// 초기 weighted 계산
+updateWeighted();
 
 // ====================================================================
 // Clipboard copy
